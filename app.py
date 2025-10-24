@@ -8,8 +8,21 @@ def index():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>🥩 Poultry Meat Freshness Detector</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <head>
+    <title>🥩 Poultry Meat Freshness Detector</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest">
+    <meta name="theme-color" content="#2E8B57">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="MeatDetector">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjMkU4QjU3Ii8+Cjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+lqTwvdGV4dD4KPC9zdmc+Cg==">
+
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { 
@@ -206,6 +219,64 @@ def index():
                     reader.readAsDataURL(file);
                 }
             });
+
+// PWA Install Prompt
+let deferredPrompt;
+let installButton;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallButton();
+});
+
+function showInstallButton() {
+    const installDiv = document.createElement('div');
+    installDiv.innerHTML = `
+        <div style="position: fixed; bottom: 20px; right: 20px; background: #2E8B57; color: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; max-width: 300px;">
+            <div style="font-weight: bold; margin-bottom: 10px;">📱 Install App</div>
+            <div style="font-size: 14px; margin-bottom: 15px;">Add to your home screen for quick access!</div>
+            <button onclick="installApp()" style="background: white; color: #2E8B57; border: none; padding: 8px 16px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-right: 10px;">Install</button>
+            <button onclick="dismissInstall()" style="background: transparent; color: white; border: 1px solid white; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Later</button>
+        </div>
+    `;
+    document.body.appendChild(installDiv);
+    installButton = installDiv;
+}
+
+function installApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            }
+            deferredPrompt = null;
+            if (installButton) {
+                installButton.remove();
+            }
+        });
+    }
+}
+
+function dismissInstall() {
+    if (installButton) {
+        installButton.remove();
+    }
+}
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('ServiceWorker registration successful');
+            }, function(err) {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+    });
+}
+
         </script>
     </body>
     </html>
@@ -214,6 +285,66 @@ def index():
 @app.route('/health')
 def health():
     return {'status': 'healthy', 'message': 'App is running successfully on Vercel'}
+
+@app.route('/manifest')
+def manifest():
+    return {
+        "name": "Poultry Meat Freshness Detector",
+        "short_name": "MeatDetector",
+        "description": "AI-powered meat freshness detection app",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#667eea",
+        "theme_color": "#2E8B57",
+        "orientation": "portrait-primary",
+        "scope": "/",
+        "icons": [
+            {
+                "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiBmaWxsPSIjMkU4QjU3Ii8+Cjx0ZXh0IHg9Ijk2IiB5PSIxMjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4MCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPvCfpakgPC90ZXh0Pgo8L3N2Zz4K",
+                "sizes": "192x192",
+                "type": "image/svg+xml",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiBmaWxsPSIjMkU4QjU3Ii8+Cjx0ZXh0IHg9IjI1NiIgeT0iMzIwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+lqSA8L3RleHQ+Cjwvc3ZnPgo=",
+                "sizes": "512x512",
+                "type": "image/svg+xml",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+
+@app.route('/sw.js')
+def service_worker():
+    return '''
+    const CACHE_NAME = 'meat-detector-v1';
+    const urlsToCache = [
+        '/',
+        '/manifest'
+    ];
+
+    self.addEventListener('install', function(event) {
+        event.waitUntil(
+            caches.open(CACHE_NAME)
+                .then(function(cache) {
+                    return cache.addAll(urlsToCache);
+                })
+        );
+    });
+
+    self.addEventListener('fetch', function(event) {
+        event.respondWith(
+            caches.match(event.request)
+                .then(function(response) {
+                    if (response) {
+                        return response;
+                    }
+                    return fetch(event.request);
+                })
+        );
+    });
+    ''', 200, {'Content-Type': 'application/javascript'}
+
 
 if __name__ == '__main__':
     app.run(debug=True)
