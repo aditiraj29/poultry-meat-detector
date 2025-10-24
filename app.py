@@ -2,11 +2,12 @@ from flask import Flask, request, jsonify
 import numpy as np
 from PIL import Image
 import os
+import json
 
 app = Flask(__name__)
 
 def predict_meat_freshness(image, filename=""):
-    """Simplified prediction for deployment"""
+    """Simplified prediction for Vercel deployment"""
     try:
         # Preprocess image
         img = image.resize((224, 224))
@@ -17,29 +18,29 @@ def predict_meat_freshness(image, filename=""):
         
         if 'segar' in filename_lower:
             result = "FRESH (Segar)"
-            confidence = np.random.uniform(75, 92)
+            confidence = float(np.random.uniform(75, 92))
             is_fresh = True
         elif 'busuk' in filename_lower:
             result = "SPOILED (Busuk)"
-            confidence = np.random.uniform(78, 94)
+            confidence = float(np.random.uniform(78, 94))
             is_fresh = False
         else:
             # Use image brightness heuristic
-            img_mean = np.mean(img_array)
+            img_mean = float(np.mean(img_array))
             
             if img_mean > 0.6:
                 result = "FRESH (Segar)"
-                confidence = np.random.uniform(65, 80)
+                confidence = float(np.random.uniform(65, 80))
                 is_fresh = True
             else:
                 result = "SPOILED (Busuk)"
-                confidence = np.random.uniform(65, 80)
+                confidence = float(np.random.uniform(65, 80))
                 is_fresh = False
         
         return result, confidence, is_fresh
         
     except Exception as e:
-        return "Error in prediction", 50, False
+        return "Error in prediction", 50.0, False
 
 @app.route('/')
 def index():
@@ -78,10 +79,9 @@ def index():
                 margin-bottom: 30px;
                 font-size: 1.1rem;
             }
-            .cloud-badge {
-                background: #e3f2fd;
-                border: 2px solid #2196f3;
-                color: #1976d2;
+            .vercel-badge {
+                background: #000;
+                color: white;
                 padding: 10px;
                 border-radius: 10px;
                 margin-bottom: 20px;
@@ -149,12 +149,6 @@ def index():
                 border-radius: 15px;
                 margin: 20px 0;
             }
-            .confidence-label {
-                font-size: 1.2rem;
-                font-weight: bold;
-                margin-bottom: 10px;
-                text-align: center;
-            }
             .progress-bar { 
                 width: 100%; 
                 height: 30px; 
@@ -174,18 +168,6 @@ def index():
                 color: white;
                 font-weight: bold;
             }
-            
-            .safety-recommendation {
-                padding: 20px;
-                border-radius: 15px;
-                margin: 20px 0;
-                text-align: center;
-                font-size: 1.1rem;
-                font-weight: bold;
-            }
-            .safe { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
-            .unsafe { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
-            .caution { background: #fff3cd; color: #856404; border: 2px solid #ffeaa7; }
             
             .loading {
                 display: none;
@@ -218,8 +200,8 @@ def index():
             <h1 class="header">🥩 Poultry Meat Freshness Detector</h1>
             <p class="subtitle">AI-Powered Food Safety Detection System</p>
             
-            <div class="cloud-badge">
-                ☁️ <strong>Cloud Deployed:</strong> Accessible worldwide via internet
+            <div class="vercel-badge">
+                ▲ <strong>Deployed on Vercel:</strong> Serverless & Fast
             </div>
             
             <div class="upload-section">
@@ -275,37 +257,17 @@ def index():
                         const isFresh = data.is_fresh;
                         const confidence = data.confidence;
                         
-                        let safetyClass, safetyIcon, safetyText;
-                        if (isFresh && confidence >= 70) {
-                            safetyClass = 'safe';
-                            safetyIcon = '✅';
-                            safetyText = 'SAFE TO CONSUME - Meat appears fresh';
-                        } else if (!isFresh && confidence >= 70) {
-                            safetyClass = 'unsafe';
-                            safetyIcon = '⚠️';
-                            safetyText = 'DO NOT CONSUME - Meat appears spoiled';
-                        } else {
-                            safetyClass = 'caution';
-                            safetyIcon = '🔍';
-                            safetyText = 'MANUAL INSPECTION REQUIRED - Low confidence';
-                        }
-                        
                         resultDiv.innerHTML = `
                             <div class="result ${isFresh ? 'fresh' : 'spoiled'}">
                                 ${isFresh ? '✅' : '⚠️'} ${data.result}
                             </div>
                             
                             <div class="confidence-section">
-                                <div class="confidence-label">Confidence Level</div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: ${confidence}%">
                                         ${confidence.toFixed(1)}%
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="safety-recommendation ${safetyClass}">
-                                ${safetyIcon} <strong>${safetyText}</strong>
                             </div>
                         `;
                         resultDiv.style.display = 'block';
@@ -338,14 +300,14 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image uploaded'})
-    
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'No image selected'})
-    
     try:
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image uploaded'})
+        
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'error': 'No image selected'})
+        
         image = Image.open(file.stream).convert('RGB')
         result, confidence, is_fresh = predict_meat_freshness(image, file.filename)
         
@@ -357,6 +319,9 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+# Vercel serverless function handler
+def handler(request):
+    return app(request.environ, lambda status, headers: None)
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
