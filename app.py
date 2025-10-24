@@ -142,11 +142,6 @@ def index():
             <h1 class="header">🥩 Poultry Meat Freshness Detector</h1>
             <p class="subtitle">AI-Powered Food Safety Detection System</p>
             
-            <div class="status">
-                ✅ <strong>Deployed Successfully on Vercel!</strong><br>
-                🌐 Your app is now live and accessible worldwide
-            </div>
-            
             <div class="upload-area" onclick="document.getElementById('imageInput').click()">
                 <div class="upload-icon">📤</div>
                 <div class="upload-text">Upload Meat Image</div>
